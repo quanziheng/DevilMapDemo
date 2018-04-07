@@ -1,10 +1,14 @@
 package com.devil.mapdemo.function;
 
+import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.amap.api.location.AMapLocation;
 import com.amap.api.location.AMapLocationClient;
@@ -49,6 +53,11 @@ public class GetMyLocationActivity extends AppCompatActivity implements Location
             isFirstLoc2=false;}
         //Toast.makeText(getApplicationContext(), "定位到我的位置", Toast.LENGTH_SHORT).show();
         aMap.moveCamera(CameraUpdateFactory.zoomTo(18));//更新地图缩放程度
+
+        //判断是否为android6.0系统版本，如果是，需要动态添加权限
+        if (Build.VERSION.SDK_INT>=23){
+            showContacts();
+        }
     }
 
     @Override
@@ -56,10 +65,42 @@ public class GetMyLocationActivity extends AppCompatActivity implements Location
         mListener = null;
     }
 
+    //6.0定位需要的权限申请
+    public void showContacts(){
+        if (ActivityCompat.checkSelfPermission(this, "android.permission.ACCESS_COARSE_LOCATION")
+                != PackageManager.PERMISSION_GRANTED){
+            Toast.makeText(getApplicationContext(),"没有权限,请手动开启定位权限", Toast.LENGTH_SHORT).show();
+            // 申请一个（或多个）权限，并提供用于回调返回的获取码（用户定义）
+            ActivityCompat.requestPermissions(this,new String[]{"android.permission.ACCESS_COARSE_LOCATION"}, 100);
+        }
+    }
+
+
+    //Android6.0申请权限的回调方法
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            // requestCode即所声明的权限获取码，在checkSelfPermission时传入
+            case 100:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // 获取到权限，作相应处理（调用定位SDK应当确保相关权限均被授权，否则可能引起定位失败）
+                    //
+                } else {
+                    // 没有获取到权限，做特殊处理
+                    Toast.makeText(getApplicationContext(), "获取位置权限失败，请手动开启", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_get_my_location);
+
         //初始化定位
         mLocationClient = new AMapLocationClient(getApplicationContext());
         //设置定位回调监听
